@@ -1,0 +1,10 @@
+mistralai
+streamlit
+dotenv
+Pillow
+langgraph
+google-generativeai
+langchain-google-genai
+rank-bm25
+nltk
+scikit-learn
