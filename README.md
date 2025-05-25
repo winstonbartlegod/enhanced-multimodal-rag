@@ -1,6 +1,6 @@
 # Enhanced-multimodal-rag 🤖📄
 
-An advanced document analysis and chat application that combines multiple OCR engines with state-of-the-art Retrieval-Augmented Generation (RAG) for intelligent document interaction.
+After months of dedicated design and development, I'm thrilled to share a fully functional version of an advanced document analysis and chat application, Enhanced-Multimodal-RAG. This tool seamlessly integrates multiple OCR engines, including Mistral OCR for superior accuracy and Marker enhanced with the latest Gemini 2.5 Flash model, with a state-of-the-art Retrieval-Augmented Generation (RAG) pipeline for intelligent document interaction. The system leverages a hybrid query approach, combining semantic embeddings from Gemini with BM25 keyword search to deliver precise and contextually relevant results. A special thanks to https://github.com/VikParuchuri/marker/tree/master/marker, which served as the foundation for one of the parsing engines, fine-tuned to maximize performance with Gemini integration.
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/streamlit-1.28+-red.svg)
@@ -36,5 +36,5 @@ An advanced document analysis and chat application that combines multiple OCR en
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/smart-doc-chat.git
-cd smart-doc-chat
+git clone https://github.com/winstonbartlegod/enhanced-multimodal-rag.git
+cd enhanced-multimodal-rag
