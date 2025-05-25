@@ -8,3 +8,6 @@ langchain-google-genai
 rank-bm25
 nltk
 scikit-learn
+torch
+torchvision
+torchaudio
