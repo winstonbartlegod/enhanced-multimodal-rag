@@ -38,3 +38,12 @@ After months of dedicated design and development, I'm thrilled to share a fully 
 ```bash
 git clone https://github.com/winstonbartlegod/enhanced-multimodal-rag.git
 cd enhanced-multimodal-rag
+
+2. **Install requirements**
+```bash
+pip install -r requirements.txt
+
+3. **Run the program**
+```bash
+streanlit run v1.py
+
