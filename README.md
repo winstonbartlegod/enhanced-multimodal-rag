@@ -2,7 +2,7 @@
 
 After months of dedicated design and development, I'm thrilled to share a fully functional version of an advanced document analysis and chat application, Enhanced-Multimodal-RAG. This tool seamlessly integrates multiple OCR engines, including Mistral OCR for superior accuracy and Marker enhanced with the latest Gemini 2.5 Flash model, with a state-of-the-art Retrieval-Augmented Generation (RAG) pipeline for intelligent document interaction. The system leverages a hybrid query approach, combining semantic embeddings from Gemini with BM25 keyword search to deliver precise and contextually relevant results. A special thanks to https://github.com/VikParuchuri/marker/tree/master/marker, which served as the foundation for one of the parsing engines, fine-tuned to maximize performance with Gemini integration.
 
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/streamlit-1.28+-red.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
@@ -45,6 +45,6 @@ pip install -r requirements.txt
 ```
 3. **Run the program**
 ```bash
-streanlit run v1.py
+streamlit run v1.py
 ```
 
