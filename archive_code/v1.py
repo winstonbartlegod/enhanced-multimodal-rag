@@ -1282,103 +1282,27 @@ def main():
             
             elif input_method == "PDF Upload":
                 uploaded_file = st.file_uploader("Choose PDF file", type=["pdf"])
-                
-                # NEW: Processing method selection
-                if uploaded_file:
-                    st.subheader("🔧 Processing Method")
+                if uploaded_file and st.button("Process PDF"):
+                    content = uploaded_file.read()
                     
-                    # Determine available options
-                    available_methods = ["Mistral OCR Only"]
-                    if MARKER_AVAILABLE and google_api_key:
-                        available_methods.extend(["Marker Only", "Both Methods"])
-                    
-                    processing_method = st.selectbox(
-                        "Choose processing method:",
-                        available_methods,
-                        help="Select which OCR method(s) to use for processing the PDF"
-                    )
-                    
-                    # Show method descriptions
-                    if processing_method == "Mistral OCR Only":
-                        st.info("🤖 Will use Mistral's OCR API for document processing")
-                    elif processing_method == "Marker Only":
-                        st.info("🏷️ Will use Marker library with Gemini for document processing")
-                    elif processing_method == "Both Methods":
-                        st.info("🔄 Will process the document with both Mistral OCR and Marker, giving you both results to compare")
-                    
-                    # Process button
-                    if st.button("Process PDF", type="primary"):
-                        content = uploaded_file.read()
+                    try:
+                        pdf_path = save_pdf_file(content, uploaded_file.name)
+                        st.session_state.pdf_path = pdf_path
                         
-                        try:
-                            pdf_path = save_pdf_file(content, uploaded_file.name)
-                            st.session_state.pdf_path = pdf_path
-                            
-                            # Reset content based on selected method
-                            if processing_method != "Marker Only":
-                                st.session_state.mistral_content = ""
-                            if processing_method != "Mistral OCR Only":
-                                st.session_state.marker_content = ""
-                            
-                            # Process with Mistral OCR if selected
-                            if processing_method in ["Mistral OCR Only", "Both Methods"]:
-                                with st.spinner("Processing document with Mistral OCR..."):
-                                    document_source = {
-                                        "type": "document_url",
-                                        "document_url": upload_pdf(mistral_client, content, uploaded_file.name)
-                                    }
-                                    
-                                    # Process OCR
-                                    ocr_response = process_ocr(mistral_client, document_source)
-                                    
-                                    if ocr_response and ocr_response.pages:
-                                        raw_content = []
-                                        
-                                        for page in ocr_response.pages:
-                                            page_content = page.markdown.strip()
-                                            if page_content:
-                                                raw_content.append(page_content)
-                                        
-                                        final_content = "\n\n".join(raw_content)
-                                        
-                                        display_content = []
-                                        for i, page in enumerate(ocr_response.pages):
-                                            page_content = page.markdown.strip()
-                                            if page_content:
-                                                display_content.append(f"Page {i+1}:\n{page_content}")
-                                        
-                                        display_formatted = "\n\n----------\n\n".join(display_content)
-                                        
-                                        st.session_state.mistral_content = final_content
-                                        st.session_state.mistral_display_content = display_formatted
-                                        st.session_state.document_loaded = True
-                                        
-                                        st.success(f"✅ Mistral OCR completed! Extracted {len(final_content)} characters from {len(raw_content)} pages.")
-                                    else:
-                                        st.warning("No content extracted from document with Mistral OCR.")
-                            
-                            # Process with Marker if selected
-                            if processing_method in ["Marker Only", "Both Methods"] and MARKER_AVAILABLE and google_api_key and gemini_model_selection:
-                                with st.spinner(f"Processing document with Marker using {gemini_model_selection}..."):
-                                    marker_result = process_pdf_with_marker(pdf_path, google_api_key, gemini_model_selection)
-                                    if marker_result:
-                                        st.session_state.marker_content = marker_result
-                                        st.session_state.document_loaded = True
-                                        st.success(f"✅ Marker processing completed using {gemini_model_selection}!")
-                                    else:
-                                        st.warning("No content extracted from document with Marker.")
-                            
-                            # Set appropriate default content source
-                            if processing_method == "Mistral OCR Only":
-                                st.session_state.content_source = "mistral"
-                            elif processing_method == "Marker Only":
-                                st.session_state.content_source = "marker"
-                            else:  # Both Methods
-                                st.session_state.content_source = "mistral"  # Default to mistral, user can switch
-                                st.info("📊 Both processing methods completed! You can switch between them in the main interface.")
-                            
-                        except Exception as e:
-                            st.error(f"Error processing PDF: {str(e)}")
+                        with st.spinner("Processing document with Mistral OCR..."):
+                            document_source = {
+                                "type": "document_url",
+                                "document_url": upload_pdf(mistral_client, content, uploaded_file.name)
+                            }
+                        
+                        if MARKER_AVAILABLE and google_api_key and gemini_model_selection:
+                            with st.spinner(f"Processing document with Marker using {gemini_model_selection}..."):
+                                marker_result = process_pdf_with_marker(pdf_path, google_api_key, gemini_model_selection)
+                                if marker_result:
+                                    st.session_state.marker_content = marker_result
+                                    st.success(f"✅ PDF processed with Marker using {gemini_model_selection} successfully!")
+                    except Exception as e:
+                        st.error(f"Error processing PDF: {str(e)}")
             
             elif input_method == "Image Upload":
                 uploaded_image = st.file_uploader("Choose Image file", type=["png", "jpg", "jpeg"])
@@ -1396,34 +1320,43 @@ def main():
                             "image_url": f"data:image/png;base64,{img_str}"
                         }
                         st.session_state.marker_content = "Image processing is only available with Mistral OCR."
-                        
-                        # Process with Mistral OCR
-                        with st.spinner("Processing image with Mistral OCR..."):
-                            try:
-                                ocr_response = process_ocr(mistral_client, document_source)
-                                
-                                if ocr_response and ocr_response.pages:
-                                    raw_content = []
-                                    
-                                    for page in ocr_response.pages:
-                                        page_content = page.markdown.strip()
-                                        if page_content:
-                                            raw_content.append(page_content)
-                                    
-                                    final_content = "\n\n".join(raw_content)
-                                    
-                                    st.session_state.mistral_content = final_content
-                                    st.session_state.document_loaded = True
-                                    
-                                    st.success(f"✅ Image processed with Mistral OCR successfully! Extracted {len(final_content)} characters.")
-                                else:
-                                    st.warning("No content extracted from image with Mistral OCR.")
-                            
-                            except Exception as e:
-                                st.error(f"Mistral OCR processing error: {str(e)}")
-                        
                     except Exception as e:
                         st.error(f"Error processing image: {str(e)}")
+            
+            # Process with Mistral OCR
+            if document_source:
+                with st.spinner("Processing document with Mistral OCR..."):
+                    try:
+                        ocr_response = process_ocr(mistral_client, document_source)
+                        
+                        if ocr_response and ocr_response.pages:
+                            raw_content = []
+                            
+                            for page in ocr_response.pages:
+                                page_content = page.markdown.strip()
+                                if page_content:
+                                    raw_content.append(page_content)
+                            
+                            final_content = "\n\n".join(raw_content)
+                            
+                            display_content = []
+                            for i, page in enumerate(ocr_response.pages):
+                                page_content = page.markdown.strip()
+                                if page_content:
+                                    display_content.append(f"Page {i+1}:\n{page_content}")
+                            
+                            display_formatted = "\n\n----------\n\n".join(display_content)
+                            
+                            st.session_state.mistral_content = final_content
+                            st.session_state.mistral_display_content = display_formatted
+                            st.session_state.document_loaded = True
+                            
+                            st.success(f"✅ Document processed with Mistral OCR successfully! Extracted {len(final_content)} characters from {len(raw_content)} pages.")
+                        else:
+                            st.warning("No content extracted from document with Mistral OCR.")
+                    
+                    except Exception as e:
+                        st.error(f"Mistral OCR processing error: {str(e)}")
     
     # Main area
     st.title("Winston's OCR + Query Engine with Smart Retrieval")
@@ -1437,33 +1370,79 @@ def main():
                 display_pdf(st.session_state.pdf_path)
         
         with col2:
-            # Only show content source selector if we have both types of content
-            available_sources = []
-            if st.session_state.mistral_content:
-                available_sources.append("Mistral OCR")
-            if st.session_state.marker_content:
-                available_sources.append("Marker")
+            content_source = st.radio(
+                "Select content source for viewing:", 
+                ["Mistral OCR", "Marker"],
+                index=0 if st.session_state.content_source == "mistral" else 1,
+                horizontal=True
+            )
             
-            if len(available_sources) > 1:
-                content_source = st.radio(
-                    "Select content source for viewing:", 
-                    available_sources,
-                    index=0 if st.session_state.content_source == "mistral" else 1,
-                    horizontal=True
-                )
-                st.session_state.content_source = "mistral" if content_source == "Mistral OCR" else "marker"
-            elif len(available_sources) == 1:
-                st.info(f"📄 Content processed with: {available_sources[0]}")
-                st.session_state.content_source = "mistral" if available_sources[0] == "Mistral OCR" else "marker"
+            st.session_state.content_source = "mistral" if content_source == "Mistral OCR" else "marker"
             
             with st.expander("Document Content", expanded=False):
-                if st.session_state.content_source == "mistral" and st.session_state.mistral_content:
-                    st.markdown(st.session_state.mistral_display_content if "mistral_display_content" in st.session_state else st.session_state.mistral_content)
-                elif st.session_state.content_source == "marker" and st.session_state.marker_content:
-                    st.markdown(st.session_state.marker_content)
+                if content_source == "Mistral OCR":
+                    if st.session_state.mistral_content:
+                        st.markdown(st.session_state.mistral_display_content if "mistral_display_content" in st.session_state else st.session_state.mistral_content)
+                    else:
+                        st.warning("No content available from Mistral OCR.")
                 else:
-                    st.warning("No content available from the selected source.")
+                    if st.session_state.marker_content:
+                        st.markdown(st.session_state.marker_content)
+                    else:
+                        st.warning("No content available from Marker processing.")
         
+        # Enhanced chat interface
+        # st.subheader("Chat with your document")
+        
+        # # WORKING SOLUTION: File-based popup with downloadable link and browser opening
+        # if (st.session_state.use_langgraph and 
+        #     st.session_state.last_context and 
+        #     st.session_state.messages and 
+        #     st.session_state.messages[-1]["role"] == "assistant"):
+            
+        #     col_btn, col_download = st.columns([2, 1])
+            
+        #     with col_btn:
+        #         if st.button("🔍 View Retrieved Context", key="context_btn", type="secondary"):
+        #             try:
+        #                 # Create HTML file
+        #                 html_file_path = create_context_html_file(st.session_state.last_context, st.session_state.last_query)
+                        
+        #                 # Try to open in browser
+        #                 try:
+        #                     webbrowser.open(f'file://{html_file_path}')
+        #                     st.success("✅ Context opened in your browser!")
+        #                 except Exception as e:
+        #                     st.warning(f"Could not auto-open browser: {e}")
+                        
+        #                 # Provide download link as backup
+        #                 with open(html_file_path, 'r', encoding='utf-8') as f:
+        #                     html_content = f.read()
+                        
+        #                 st.download_button(
+        #                     label="📥 Download Context HTML",
+        #                     data=html_content,
+        #                     file_name=f"retrieved_context_{int(time.time())}.html",
+        #                     mime="text/html",
+        #                     key="download_context"
+        #                 )
+                        
+        #                 st.info("💡 If the browser didn't open automatically, use the download button above and open the file manually.")
+                        
+        #             except Exception as e:
+        #                 st.error(f"Error creating context view: {e}")
+            
+        #     with col_download:
+        #         # Quick preview button
+        #         if st.button("👁️ Quick Preview", key="preview_btn"):
+        #             with st.expander("Context Preview", expanded=True):
+        #                 st.text_area(
+        #                     "Retrieved Context:",
+        #                     value=st.session_state.last_context,
+        #                     height=300,
+        #                     disabled=True
+        #                 )
+
         # Enhanced chat interface
         st.subheader("Chat with your document")
 
@@ -1526,23 +1505,11 @@ def main():
                             key=f"context_preview_{len(st.session_state.messages)}"
                         )
         
-        # Query source selection - only show if we have both types of content
-        available_query_sources = []
-        if st.session_state.mistral_content:
-            available_query_sources.append("Mistral OCR")
-        if st.session_state.marker_content:
-            available_query_sources.append("Marker")
-        
-        if len(available_query_sources) > 1:
-            query_source = st.select_slider(
-                "Select content source for querying:",
-                options=["Mistral OCR", "Balanced", "Marker"],
-                value="Balanced"
-            )
-        else:
-            query_source = available_query_sources[0] if available_query_sources else "Mistral OCR"
-            if len(available_query_sources) == 1:
-                st.info(f"🎯 Querying with: {query_source}")
+        query_source = st.select_slider(
+            "Select content source for querying:",
+            options=["Mistral OCR", "Balanced", "Marker"],
+            value="Balanced"
+        )
         
         # Display chat messages
         for i, message in enumerate(st.session_state.messages):
@@ -1570,7 +1537,7 @@ def main():
                 elif query_source == "Marker":
                     document_content = st.session_state.marker_content
                     source_info = "Marker"
-                else:  # Balanced
+                else:
                     if st.session_state.mistral_content and st.session_state.marker_content:
                         document_content = f"--- MISTRAL OCR CONTENT ---\n\n{st.session_state.mistral_content}\n\n--- MARKER CONTENT ---\n\n{st.session_state.marker_content}"
                         source_info = "combined Mistral OCR and Marker"
@@ -1603,6 +1570,10 @@ def main():
                         st.markdown(response)
                 
                 st.session_state.messages.append({"role": "assistant", "content": response})
+                
+                # Force rerun to show context button (trying to fix this. But later ba)
+                #if st.session_state.use_langgraph and st.session_state.last_context:
+                #    st.rerun()
     else:
         st.info("👈 Please upload a document using the sidebar to start chatting.")
         
