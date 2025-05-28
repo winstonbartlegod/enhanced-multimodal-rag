@@ -11,5 +11,6 @@ scikit-learn
 torch
 torchvision
 torchaudio
-marker-pdf[full]
+surya-ocr==0.13.1
+marker-pdf==1.6.2
 watchdog
