@@ -11,3 +11,5 @@ scikit-learn
 torch
 torchvision
 torchaudio
+marker-pdf[full]
+watchdog
